@@ -1,0 +1,49 @@
+# optimise mass subject to rf constraints
+
+# Dakota Input File: beam_opt_soga.in
+# Usage:
+#   dakota -i beam_opt_soga.in -o beam_opt_soga.out > beam_opt_soga.stdout
+
+environment
+  tabular_data
+    tabular_data_file = 'beam_opt_soga.dat'
+
+method
+  soga
+    max_function_evaluations = 2000
+
+model
+  single
+
+variables
+  continuous_design = 6
+    descriptors       'h'     'tw'   'blf'   'tlf'   'buf'   'tuf'
+    initial_point     140.0   2.5    60.0    5.0     60.0    5.0
+    lower_bounds      30.0    1.5    6.0     1.5     6.0     1.5
+    upper_bounds      300.0   6.0    100.0   12.0    100.0   12.0
+
+  continuous_state = 3
+    descriptors      'L'      'Fup'     'Fdown'
+    initial_state     1500.0   6000.0    -10000.0
+    
+  discrete_state_set string = 1
+    descriptors   'matname'
+    elements      'AL2198' 'AL7010' 'TI64'
+    initial_state 'AL7010'
+    
+
+interface
+	fork							
+  analysis_drivers = 'python.exe dakotabeam.py'
+	parameters_file = 'params.in'
+	results_file = 'results.out'
+
+
+responses
+  # in the output, they must appear in order objective f(x), inequalities, then equalities
+  objective_functions = 1
+  nonlinear_inequality_constraints = 9
+  descriptors   'mass' 'g_t_uf' 'g_t_lf' 'g_c_uf' 'g_c_lf' 'g_lb_uf' 'g_lb_lf' 'g_s_web' 'g_wb' 'g_lat' 
+  no_gradients
+  no_hessians
+

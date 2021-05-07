@@ -1,0 +1,83 @@
+# optimise mass subject to rf constraints
+
+# Dakota Input File: beam_opt.in
+# Usage:
+#   dakota -i beam_opt_7010_pareto.in -o beam_opt_7010_pareto.out > beam_opt_7010_pareto.stdout
+
+
+environment
+  #top_method_pointer = 'PS'
+  tabular_data
+    tabular_data_file = 'beam_opt_7010_pareto.dat'
+
+
+method
+  id_method = 'PS'
+  pareto_set
+    method_pointer = 'CC'
+    # das ist mist, weil er die absolution werte verwendet.
+    # Masse 2..10 kg, cost 100..1000 €
+    # also irgendwie normalisieren, oder andere weights
+    weight_set = 
+      1.000 0.000
+      0.999 0.001
+      0.990 0.010
+      0.950 0.050
+      0.900 0.100
+      0.800 0.200
+      0.400 0.600
+      0.000 1.000
+
+
+method
+  id_method = 'NEWTON'
+  optpp_q_newton
+  convergence_tolerance = 1e-6
+
+method
+  id_method = 'CC'
+  coliny_cobyla
+  convergence_tolerance = 1e-6  
+
+
+model
+  single
+
+
+variables
+  continuous_design = 6
+    descriptors       'h'     'tw'   'blf'   'tlf'   'buf'   'tuf'
+    initial_point     140.0   2.5    60.0    5.0     60.0    5.0
+    lower_bounds      30.0    1.5    6.0     1.5     6.0     1.5
+    upper_bounds      300.0   6.0    100.0   12.0    100.0   12.0
+    scale_types       'auto'
+
+  continuous_state = 3
+    descriptors      'L'      'Fup'     'Fdown'
+    initial_state     1500.0   6000.0    -10000.0
+    
+  discrete_state_set string = 1
+    descriptors   'matname'
+    elements      'AL2198' 'AL7010' 'TI64'
+    initial_state 'AL7010'
+    
+
+interface
+	fork							
+  analysis_drivers = 'python.exe dakotabeam.py'
+	parameters_file = 'params.in'
+	results_file = 'results.out'
+
+
+responses
+  descriptors   'mass' 'cost' 'g_t_uf' 'g_t_lf' 'g_c_uf' 'g_c_lf' 'g_lb_uf' 'g_lb_lf' 'g_s_web' 'g_wb' 'g_lat' 
+  # in the output, they must appear in order objective f(x), inequalities, then equalities
+  objective_functions = 2
+    primary_scale_types   'log' 'log'
+  nonlinear_inequality_constraints = 9
+  numerical_gradients
+    method_source dakota
+    interval_type central
+    fd_step_size = 0.01
+  no_hessians
+
